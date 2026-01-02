@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified XAI Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1>🎯 Unified XAI Interface</h1>
+            <p class="subtitle">Multi-Modal Classification with Explainable AI</p>
+            <div class="device-info">Device: <span id="device">{{ device }}</span></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Welcome Section -->
+        <section id="welcome-section" class="card welcome-card">
+            <h2>👋 Welcome!</h2>
+            <p>Upload an <strong>audio file</strong> (.wav) or <strong>chest X-ray image</strong> (.jpg, .png) to get started.</p>
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">🎵</div>
+                    <h3>Audio</h3>
+                    <p>Deepfake Detection<br>(Real vs Fake)</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🏥</div>
+                    <h3>Images</h3>
+                    <p>Lung Cancer Detection<br>(Normal vs Malignant)</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🔍</div>
+                    <h3>XAI</h3>
+                    <p>LIME Explanations<br>(Visual Insights)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="card">
+            <h2>📁 Step 1: Upload File</h2>
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">📎</div>
+                <p class="upload-text">Drag & drop file here or click to browse</p>
+                <p class="upload-hint">Supports: .wav, .mp3, .jpg, .png (Max 10MB)</p>
+                <input type="file" id="file-input" accept=".wav,.mp3,.jpg,.jpeg,.png" hidden>
+            </div>
+            <div id="file-info" class="file-info" style="display: none;"></div>
+            <div id="uploaded-image-container" style="display: none; margin-top: 20px;">
+                <img id="uploaded-image" style="max-width: 100%; border-radius: 8px;">
+            </div>
+        </section>
+
+        <!-- Model Selection -->
+        <section id="model-section" class="card" style="display: none;">
+            <h2>🧠 Step 2: Select Model</h2>
+            <div id="model-buttons" class="button-group"></div>
+        </section>
+
+        <!-- Prediction Results -->
+        <section id="prediction-section" class="card" style="display: none;">
+            <h2>🎯 Prediction Results</h2>
+            <div id="prediction-content"></div>
+        </section>
+
+        <!-- XAI Section -->
+        <section id="xai-section" class="card" style="display: none;">
+            <h2>🔍 Step 3: Generate Explanation</h2>
+            <div id="xai-buttons" class="button-group"></div>
+            <div id="explanation-loading" style="display: none; margin-top: 20px;">
+                <div class="loading-spinner"></div>
+                <p>Generating LIME explanation... This may take 30-60 seconds.</p>
+            </div>
+        </section>
+
+        <!-- Explanation Results -->
+        <section id="explanation-section" class="card" style="display: none;">
+            <h2>✨ LIME Explanation</h2>
+            <div id="explanation-content"></div>
+        </section>
+
+        <!-- Reset Button -->
+        <section class="card">
+            <button id="reset-btn" class="btn btn-secondary btn-full" onclick="resetSession()">
+                🔄 Reset & Upload New File
+            </button>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Built with PyTorch, Flask & LIME | Multi-Modal Explainable AI</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
