@@ -32,6 +32,14 @@ wheels/
 # VS Code
 .vscode/
 
+# Chainlit
+.chainlit/
+*.db
+*.db-shm
+*.db-wal
+.files/
+.literal/
+
 # Data files
 data/
 *.wav
