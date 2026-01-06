@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Tuple, Optional
 import matplotlib.pyplot as plt
 
-from config import IMAGE_CONFIG, DEVICE
+from config import IMAGE_CONFIG, TORCH_DEVICE
 
 
 class ImageProcessor:
@@ -86,8 +86,8 @@ class ImageProcessor:
         unnormalized_tensor = unnormalized_tensor.unsqueeze(0)
         
         # Move to device
-        normalized_tensor = normalized_tensor.to(DEVICE)
-        unnormalized_tensor = unnormalized_tensor.to(DEVICE)
+        normalized_tensor = normalized_tensor.to(TORCH_DEVICE)
+        unnormalized_tensor = unnormalized_tensor.to(TORCH_DEVICE)
         
         return normalized_tensor, unnormalized_tensor, image
     

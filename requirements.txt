@@ -2,6 +2,8 @@
 torch>=2.0.0
 torchvision>=0.15.0
 tensorflow>=2.13.0
+transformers>=4.40.0
+safetensors>=0.4.0
 numpy>=1.24.0
 scipy>=1.10.0
 
@@ -20,13 +22,9 @@ lime>=0.2.0.1
 shap>=0.42.0
 captum>=0.6.0  # For Grad-CAM and other attribution methods
 
-# Web Interface (Chainlit)
-chainlit>=0.7.0
-python-multipart>=0.0.6
-
-# Alternative: Flask (if switching)
-# flask>=2.3.0
-# flask-cors>=4.0.0
+# Flask (if switching)
+flask>=2.3.0
+flask-cors>=4.0.0
 
 # Data Handling
 pandas>=2.0.0
@@ -47,15 +45,7 @@ plotly>=5.15.0
 # pytest-cov>=4.1.0
 
 # Jupyter (for Colab notebooks)
-# jupyter>=1.0.0
-# ipywidgets>=8.0.0
+ipykernel
 
 # # File handling
 # python-magic>=0.4.27  # File type detection
-
-# # Progress bars for web
-# stqdm>=0.0.5  # Streamlit-style progress bars
-
-# Optional: for advanced visualizations
-# gradio>=3.40.0  # Can be used as alternative interface
-# streamlit>=1.25.0  # Can be used as alternative interface

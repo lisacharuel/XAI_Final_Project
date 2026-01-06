@@ -1,23 +1,21 @@
 """
 Unified XAI Interface - Flask Application
-Multi-modal classification with explainable AI
+Audio deepfake detection & Image classification with explainable AI
 
 Features:
 - Beautiful web interface
-- File upload (audio and images)
-- Model selection
+- Audio file upload (WAV, MP3)
+- Image file upload (JPG, PNG, BMP)
+- Model selection for audio (VGG16, MobileNet, ResNet50) and image (ConvNeXt, DenseNet)
 - Real-time predictions
-- LIME explanations
-- Comparison view
+- LIME explanations for both modalities
 """
 
 from flask import Flask, render_template, request, jsonify, send_file, session
 from werkzeug.utils import secure_filename
 import os
 from pathlib import Path
-import torch
 import numpy as np
-from PIL import Image
 import io
 import uuid
 import json
@@ -75,8 +73,18 @@ def get_session_data():
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
-    ALLOWED_EXTENSIONS = {'wav', 'mp3', 'jpg', 'jpeg', 'png'}
+    ALLOWED_EXTENSIONS = {'wav', 'mp3', 'jpg', 'jpeg', 'png', 'bmp'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def get_file_type(filename):
+    """Determine file type from extension"""
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext in {'wav', 'mp3'}:
+        return 'audio'
+    elif ext in {'jpg', 'jpeg', 'png', 'bmp'}:
+        return 'image'
+    return None
 
 
 # ============================================================================
@@ -132,8 +140,11 @@ def upload_file():
         # Process based on type
         if file_type == 'audio':
             result = process_audio(filepath)
-        else:
+        elif file_type == 'image':
             result = process_image(filepath)
+        else:
+            filepath.unlink()
+            return jsonify({'error': 'Unsupported file type'}), 400
         
         # Store in session
         session_data = get_session_data()
@@ -177,16 +188,13 @@ def process_audio(filepath):
 
 def process_image(filepath):
     """Process image file"""
-    # Preprocess
-    normalized, unnormalized, original = image_processor.preprocess(filepath)
+    # Preprocess - returns (normalized_tensor, unnormalized_tensor, original_image)
+    normalized_tensor, unnormalized_tensor, original_image = image_processor.preprocess(filepath)
     
     # Store in session
     session_data = get_session_data()
-    session_data['processed_tensor'] = normalized
-    session_data['original_data'] = np.array(original)
-    
-    # Get info
-    info = image_processor.get_image_info(filepath)
+    session_data['processed_tensor'] = normalized_tensor  # For model prediction
+    session_data['original_data'] = original_image  # For LIME visualization
     
     # Get compatible models
     models = compatibility_checker.get_compatible_models('image')
@@ -195,25 +203,13 @@ def process_image(filepath):
         'success': True,
         'file_type': 'image',
         'info': {
-            'width': info.get('width', 'N/A'),
-            'height': info.get('height', 'N/A'),
-            'shape': str(normalized.shape)
+            'size': f"{original_image.width}x{original_image.height}",
+            'mode': original_image.mode,
+            'shape': str(list(normalized_tensor.shape))
         },
         'compatible_models': models,
-        'compatible_xai': compatibility_checker.get_compatible_xai_methods('image'),
-        'image_url': f'/api/uploaded-image'
+        'compatible_xai': compatibility_checker.get_compatible_xai_methods('image')
     }
-
-
-@app.route('/api/uploaded-image')
-def get_uploaded_image():
-    """Return uploaded image"""
-    session_data = get_session_data()
-    
-    if session_data['uploaded_file'] is None:
-        return jsonify({'error': 'No image uploaded'}), 404
-    
-    return send_file(session_data['uploaded_file'], mimetype='image/png')
 
 
 @app.route('/api/predict', methods=['POST'])
@@ -232,20 +228,24 @@ def predict():
         return jsonify({'error': 'No file uploaded'}), 400
     
     try:
-        # Load model
-        if session_data['file_type'] == 'audio':
-            model = model_loader.load_audio_model(model_key, use_pretrained=False)
+        file_type = session_data['file_type']
+        
+        # Load model based on file type
+        if file_type == 'audio':
+            model = model_loader.load_audio_model(model_key)
             class_names = AUDIO_CONFIG['classes']
-        else:
-            model = model_loader.load_image_model(model_key, use_pretrained=False)
+        elif file_type == 'image':
+            model = model_loader.load_image_model(model_key)
             class_names = IMAGE_CONFIG['classes']
+        else:
+            return jsonify({'error': 'Unknown file type'}), 400
         
         # Store model
         session_data['loaded_model'] = model
         session_data['selected_model'] = model_key
         
-        # Make prediction
-        result = quick_predict(model, session_data['processed_tensor'], session_data['file_type'])
+        # Make prediction (pass model_key for correct class labels)
+        result = quick_predict(model, session_data['processed_tensor'], file_type, model_key)
         session_data['prediction_result'] = result
         
         return jsonify({
@@ -281,7 +281,14 @@ def explain():
     
     try:
         if xai_method == 'lime':
-            class_names = AUDIO_CONFIG['classes'] if session_data['file_type'] == 'audio' else IMAGE_CONFIG['classes']
+            # Get class names based on file type
+            file_type = session_data['file_type']
+            if file_type == 'audio':
+                class_names = AUDIO_CONFIG['classes']
+            elif file_type == 'image':
+                class_names = IMAGE_CONFIG['classes']
+            else:
+                return jsonify({'error': 'Unknown file type'}), 400
             
             # Generate explanation
             save_path = Path(f"outputs/visualizations/flask_{session_data['file_type']}_lime_{session_data['selected_model']}.png")
@@ -325,6 +332,25 @@ def get_explanation_image():
         return jsonify({'error': 'Explanation not found'}), 404
     
     return send_file(filepath, mimetype='image/png')
+
+
+@app.route('/api/uploaded-image')
+def get_uploaded_image():
+    """Return the uploaded image for preview"""
+    session_data = get_session_data()
+    
+    if session_data['uploaded_file'] is None:
+        return jsonify({'error': 'No file uploaded'}), 404
+    
+    if session_data['file_type'] != 'image':
+        return jsonify({'error': 'Uploaded file is not an image'}), 400
+    
+    filepath = Path(session_data['uploaded_file'])
+    
+    if not filepath.exists():
+        return jsonify({'error': 'Image not found'}), 404
+    
+    return send_file(filepath, mimetype='image/jpeg')
 
 
 @app.route('/api/reset', methods=['POST'])
@@ -383,7 +409,7 @@ if __name__ == '__main__':
     Path('static').mkdir(exist_ok=True)
     
     print("\n" + "="*70)
-    print("🚀 Unified XAI Interface - Flask Version")
+    print("🚀 Unified XAI Interface - Audio & Image Classification")
     print("="*70)
     print(f"\n📊 Device: {DEVICE}")
     print(f"🎵 Audio Models: {len(compatibility_checker.get_compatible_models('audio'))}")

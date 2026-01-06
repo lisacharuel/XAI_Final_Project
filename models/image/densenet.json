@@ -1,0 +1,53 @@
+{
+  "model_type": "densenet",
+  "architectures": ["DenseNet121"],
+  "num_labels": 14,
+  "labels": [
+    "No Finding",
+    "Enlarged Cardiomediastinum",
+    "Cardiomegaly",
+    "Lung Opacity",
+    "Lung Lesion",
+    "Edema",
+    "Consolidation",
+    "Pneumonia",
+    "Atelectasis",
+    "Pneumothorax",
+    "Pleural Effusion",
+    "Pleural Other",
+    "Fracture",
+    "Support Devices"
+  ],
+  "id2label": {
+    "0": "No Finding",
+    "1": "Enlarged Cardiomediastinum",
+    "2": "Cardiomegaly",
+    "3": "Lung Opacity",
+    "4": "Lung Lesion",
+    "5": "Edema",
+    "6": "Consolidation",
+    "7": "Pneumonia",
+    "8": "Atelectasis",
+    "9": "Pneumothorax",
+    "10": "Pleural Effusion",
+    "11": "Pleural Other",
+    "12": "Fracture",
+    "13": "Support Devices"
+  },
+  "label2id": {
+    "No Finding": 0,
+    "Enlarged Cardiomediastinum": 1,
+    "Cardiomegaly": 2,
+    "Lung Opacity": 3,
+    "Lung Lesion": 4,
+    "Edema": 5,
+    "Consolidation": 6,
+    "Pneumonia": 7,
+    "Atelectasis": 8,
+    "Pneumothorax": 9,
+    "Pleural Effusion": 10,
+    "Pleural Other": 11,
+    "Fracture": 12,
+    "Support Devices": 13
+  }
+}

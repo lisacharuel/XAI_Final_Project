@@ -91,7 +91,8 @@ function displayFileInfo(data) {
         html += `<p><strong>Duration:</strong> ${info.duration}s</p>`;
         html += `<p><strong>Sample Rate:</strong> ${info.sample_rate} Hz</p>`;
     } else {
-        html += `<p><strong>Original Size:</strong> ${info.width}×${info.height}</p>`;
+        html += `<p><strong>Size:</strong> ${info.size}</p>`;
+        html += `<p><strong>Mode:</strong> ${info.mode}</p>`;
     }
     
     html += `<p><strong>Processed Shape:</strong> ${info.shape}</p>`;

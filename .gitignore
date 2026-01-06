@@ -48,11 +48,9 @@ data/
 *.jpeg
 *.png
 
-# Model weights
-weights/
-*.pth
-*.pt
+# Models
 *.h5
+*.safetensors
 
 # Outputs
 outputs/

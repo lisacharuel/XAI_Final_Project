@@ -15,28 +15,20 @@ BASE_DIR = Path(__file__).parent
 
 # Data directories
 DATA_DIR = BASE_DIR / "data"
-SAMPLE_AUDIO_DIR = DATA_DIR / "sample_audio"
-SAMPLE_IMAGE_DIR = DATA_DIR / "sample_images"
+AUDIO_DIR = DATA_DIR / "audio"
+IMAGE_DIR = DATA_DIR / "images"
 
 # Model directories
 MODELS_DIR = BASE_DIR / "models"
 AUDIO_MODELS_DIR = MODELS_DIR / "audio"
 IMAGE_MODELS_DIR = MODELS_DIR / "image"
 
-# Weights directory
-WEIGHTS_DIR = BASE_DIR / "weights"
-AUDIO_WEIGHTS_DIR = WEIGHTS_DIR / "audio_models"
-IMAGE_WEIGHTS_DIR = WEIGHTS_DIR / "image_models"
-
 # Output directories
 OUTPUT_DIR = BASE_DIR / "outputs"
 VISUALIZATIONS_DIR = OUTPUT_DIR / "visualizations"
 
-# Create directories if they don't exist
-for directory in [DATA_DIR, SAMPLE_AUDIO_DIR, SAMPLE_IMAGE_DIR, 
-                   MODELS_DIR, AUDIO_MODELS_DIR, IMAGE_MODELS_DIR,
-                   WEIGHTS_DIR, AUDIO_WEIGHTS_DIR, IMAGE_WEIGHTS_DIR,
-                   OUTPUT_DIR, VISUALIZATIONS_DIR]:
+# Create output directories if they don't exist
+for directory in [OUTPUT_DIR, VISUALIZATIONS_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
 
 
@@ -46,44 +38,32 @@ for directory in [DATA_DIR, SAMPLE_AUDIO_DIR, SAMPLE_IMAGE_DIR,
 
 AUDIO_CONFIG = {
     # File formats
-    "supported_formats": [".wav", ".mp3", ".flac"],
+    "supported_formats": [".wav", ".mp3"],
     
-    # Preprocessing
-    "sample_rate": 16000,  # Standard for speech
-    "duration": 3.0,  # seconds
-    "n_mels": 128,
-    "n_fft": 2048,
-    "hop_length": 512,
+    # Spectrogram dimensions (matching h5 models)
+    "spectrogram_height": 224,
+    "spectrogram_width": 224,
     
-    # Spectrogram dimensions
-    "spectrogram_height": 128,
-    "spectrogram_width": 128,
-    
-    # Available models
+    # Available models (corresponding to .h5 files in models/audio)
     "models": {
         "vgg16": {
-            "name": "VGG16 Audio",
-            "weight_file": "vgg16_audio_best.pth",
+            "name": "VGG16",
+            "h5_file": "vgg16.h5",
             "description": "Deep CNN with 16 layers, good for complex patterns"
         },
         "mobilenet": {
-            "name": "MobileNet Audio",
-            "weight_file": "mobilenet_audio_best.pth",
+            "name": "MobileNet",
+            "h5_file": "mobilenet.h5",
             "description": "Lightweight model, faster inference"
         },
-        "resnet": {
-            "name": "ResNet Audio",
-            "weight_file": "resnet_audio_best.pth",
-            "description": "Residual network, handles deep architectures"
-        },
-        "custom_cnn": {
-            "name": "Custom CNN Audio",
-            "weight_file": "custom_cnn_audio_best.pth",
-            "description": "Lightweight custom architecture"
+        "resnet50": {
+            "name": "ResNet50",
+            "h5_file": "resnet50.h5",
+            "description": "Residual network with 50 layers"
         }
     },
     
-    # Classification
+    # Classification (binary: 0=Real, 1=Fake)
     "classes": ["Real", "Fake"],
     "num_classes": 2
 }
@@ -102,23 +82,33 @@ IMAGE_CONFIG = {
     "mean": [0.485, 0.456, 0.406],  # ImageNet normalization
     "std": [0.229, 0.224, 0.225],
     
-    # Available models
+    # Available models (corresponding to .safetensors files in models/image)
     "models": {
-        "alexnet": {
-            "name": "AlexNet",
-            "weight_file": "alexnet_chest_best.pth",
-            "description": "Classic CNN architecture, efficient"
+        "convnext": {
+            "name": "ConvNeXt",
+            "safetensors_file": "convnext.safetensors",
+            "config_file": "convenext.json",
+            "architecture": "convnext",
+            "description": "Modern CNN architecture with transformer-inspired design",
+            "num_classes": 5,
+            "classes": ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema", "Pleural Effusion"]
         },
         "densenet": {
             "name": "DenseNet",
-            "weight_file": "densenet_chest_best.pth",
-            "description": "Dense connections, better gradient flow"
+            "safetensors_file": "densenet.safetensors",
+            "config_file": "densenet.json",
+            "architecture": "densenet",
+            "description": "Dense connections, better gradient flow",
+            "num_classes": 14,
+            "classes": ["No Finding", "Enlarged Cardiomediastinum", "Cardiomegaly", "Lung Opacity", 
+                       "Lung Lesion", "Edema", "Consolidation", "Pneumonia", "Atelectasis", 
+                       "Pneumothorax", "Pleural Effusion", "Pleural Other", "Fracture", "Support Devices"]
         }
     },
     
-    # Classification
-    "classes": ["Normal", "Malignant"],
-    "num_classes": 2
+    # Classification (default, overridden by model-specific config)
+    "classes": ["Atelectasis", "Cardiomegaly", "Consolidation", "Edema", "Pleural Effusion"],
+    "num_classes": 5
 }
 
 
@@ -137,22 +127,6 @@ XAI_CONFIG = {
                 "num_samples": 1000,
                 "num_features": 10
             }
-        },
-        "shap": {
-            "name": "SHAP",
-            "description": "SHapley Additive exPlanations",
-            "compatible_with": ["audio", "image"],
-            "parameters": {
-                "num_samples": 100
-            }
-        },
-        "gradcam": {
-            "name": "Grad-CAM",
-            "description": "Gradient-weighted Class Activation Mapping",
-            "compatible_with": ["image"],  # Only for images
-            "parameters": {
-                "target_layer": -1  # Last conv layer
-            }
         }
     }
 }
@@ -167,13 +141,6 @@ APP_CONFIG = {
     "description": "Multi-modal classification with XAI for audio and image data",
     "version": "1.0.0",
     
-    # Chainlit settings
-    "chainlit": {
-        "port": 8000,
-        "host": "0.0.0.0",
-        "debug": True
-    },
-    
     # Upload settings
     "max_file_size": 10 * 1024 * 1024,  # 10 MB
     "allowed_extensions": {
@@ -186,60 +153,46 @@ APP_CONFIG = {
     "dpi": 100
 }
 
-
-# ============================================================================
-# MODEL URLS (for downloading pre-trained weights)
-# ============================================================================
-
-MODEL_URLS = {
-    # These would be actual URLs to download weights
-    # For now, placeholders
-    "audio": {
-        "vgg16": "https://example.com/vgg16_audio.pth",
-        "mobilenet": "https://example.com/mobilenet_audio.pth",
-        "resnet": "https://example.com/resnet_audio.pth",
-        "custom_cnn": "https://example.com/custom_cnn_audio.pth"
-    },
-    "image": {
-        "alexnet": "https://example.com/alexnet_chest.pth",
-        "densenet": "https://example.com/densenet_chest.pth"
-    }
-}
-
-
 # ============================================================================
 # DEVICE CONFIGURATION
 # ============================================================================
 
-import torch
+# TensorFlow device (for audio models)
+import tensorflow as tf
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"🖥️  Using device: {DEVICE}")
+# PyTorch device (for image models)
+import torch
+TORCH_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Check if GPU is available
+gpus = tf.config.list_physical_devices('GPU')
+if gpus or torch.cuda.is_available():
+    DEVICE = "GPU"
+    print(f"🖥️  Using device: GPU")
+else:
+    DEVICE = "CPU"
+    print(f"🖥️  Using device: CPU")
 
 
 # ============================================================================
 # UTILITY FUNCTIONS
 # ============================================================================
 
-def get_model_path(model_type: str, model_name: str) -> Path:
+def get_audio_model_path(model_name: str) -> Path:
     """
-    Get the full path to a model weight file
+    Get the full path to an audio model .h5 file
     
     Args:
-        model_type: 'audio' or 'image'
-        model_name: name of the model (e.g., 'vgg16', 'alexnet')
+        model_name: name of the model (e.g., 'vgg16', 'mobilenet')
     
     Returns:
-        Path object to the weight file
+        Path object to the .h5 file
     """
-    if model_type == "audio":
-        weight_file = AUDIO_CONFIG["models"][model_name]["weight_file"]
-        return AUDIO_WEIGHTS_DIR / weight_file
-    elif model_type == "image":
-        weight_file = IMAGE_CONFIG["models"][model_name]["weight_file"]
-        return IMAGE_WEIGHTS_DIR / weight_file
-    else:
-        raise ValueError(f"Unknown model type: {model_type}")
+    if model_name not in AUDIO_CONFIG["models"]:
+        raise ValueError(f"Unknown audio model: {model_name}")
+    
+    h5_file = AUDIO_CONFIG["models"][model_name]["h5_file"]
+    return AUDIO_MODELS_DIR / h5_file
 
 
 def get_compatible_xai_methods(input_type: str) -> list:
@@ -285,14 +238,14 @@ __all__ = [
     'BASE_DIR',
     'DATA_DIR',
     'MODELS_DIR',
-    'WEIGHTS_DIR',
     'OUTPUT_DIR',
     'AUDIO_CONFIG',
     'IMAGE_CONFIG',
     'XAI_CONFIG',
     'APP_CONFIG',
     'DEVICE',
-    'get_model_path',
+    'AUDIO_MODELS_DIR',
+    'get_audio_model_path',
     'get_compatible_xai_methods',
     'detect_input_type'
 ]

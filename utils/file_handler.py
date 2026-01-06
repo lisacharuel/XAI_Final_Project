@@ -56,8 +56,7 @@ class FileHandler:
         elif file_ext in IMAGE_CONFIG["supported_formats"]:
             file_type = "image"
         else:
-            supported = (AUDIO_CONFIG["supported_formats"] + 
-                        IMAGE_CONFIG["supported_formats"])
+            supported = AUDIO_CONFIG["supported_formats"] + IMAGE_CONFIG["supported_formats"]
             return False, None, f"Unsupported format. Supported: {supported}"
         
         return True, file_type, None
