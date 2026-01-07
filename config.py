@@ -127,6 +127,22 @@ XAI_CONFIG = {
                 "num_samples": 1000,
                 "num_features": 10
             }
+        },
+        "gradcam": {
+            "name": "Grad-CAM",
+            "description": "Gradient-weighted Class Activation Mapping",
+            "compatible_with": ["audio", "image"],
+            "parameters": {
+                "layer_name": "features.11"  # Example layer name for ConvNeXt
+            }
+        },
+        "shap": {
+            "name": "SHAP",
+            "description": "SHapley Additive exPlanations",
+            "compatible_with": ["audio", "image"],
+            "parameters": {
+                "num_samples": 100
+            }
         }
     }
 }

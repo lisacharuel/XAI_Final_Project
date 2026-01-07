@@ -25,6 +25,8 @@ from preprocessing.audio_processor import audio_processor
 from preprocessing.image_processor import image_processor
 from models.model_loader import model_loader, quick_predict
 from xai.lime_explainer import explain_with_lime
+from xai.gradcam_explainer import GradCAMExplainer
+from xai.shap_explainer import explain_with_shap
 from utils.file_handler import file_handler
 from utils.compatibility_checker import compatibility_checker
 from config import AUDIO_CONFIG, IMAGE_CONFIG, DEVICE
@@ -262,60 +264,101 @@ def predict():
 
 @app.route('/api/explain', methods=['POST'])
 def explain():
-    """Generate XAI explanation"""
-    
     data = request.get_json()
     xai_method = data.get('method', 'lime')
-    
     session_data = get_session_data()
-    
+
     if session_data['loaded_model'] is None:
         return jsonify({'error': 'No model loaded'}), 400
-    
     if session_data['prediction_result'] is None:
         return jsonify({'error': 'No prediction made'}), 400
-    
-    # Check compatibility
+
     if not compatibility_checker.is_xai_compatible(xai_method, session_data['file_type']):
         return jsonify({'error': f'{xai_method.upper()} not compatible with {session_data["file_type"]}'}), 400
-    
+
     try:
+        file_type = session_data['file_type']
+        model = session_data['loaded_model']
+        input_tensor = session_data['processed_tensor']
+        original_data = session_data['original_data']
+        prediction_result = session_data['prediction_result']
+        selected_model = session_data['selected_model']
+
+        # Get the correct class names based on model
+        if file_type == 'audio':
+            class_names = AUDIO_CONFIG['classes']
+        else:
+            # Use model-specific class names if available
+            model_config = IMAGE_CONFIG['models'].get(selected_model, {})
+            class_names = model_config.get('classes', IMAGE_CONFIG['classes'])
+
+        save_path = Path(f"outputs/visualizations/flask_{file_type}_{xai_method}_{selected_model}.png")
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
         if xai_method == 'lime':
-            # Get class names based on file type
-            file_type = session_data['file_type']
-            if file_type == 'audio':
-                class_names = AUDIO_CONFIG['classes']
-            elif file_type == 'image':
-                class_names = IMAGE_CONFIG['classes']
-            else:
-                return jsonify({'error': 'Unknown file type'}), 400
-            
-            # Generate explanation
-            save_path = Path(f"outputs/visualizations/flask_{session_data['file_type']}_lime_{session_data['selected_model']}.png")
-            save_path.parent.mkdir(parents=True, exist_ok=True)
-            
             explanation_img, scores, fig = explain_with_lime(
-                model=session_data['loaded_model'],
-                input_tensor=session_data['processed_tensor'],
-                original_data=session_data['original_data'],
-                input_type=session_data['file_type'],
+                model,
+                input_tensor,
+                original_data,
+                input_type=file_type,
                 class_names=class_names,
-                prediction_result=session_data['prediction_result'],
+                prediction_result=prediction_result,
                 save_path=save_path
             )
-            
-            import matplotlib.pyplot as plt
-            plt.close(fig)
-            
-            return jsonify({
-                'success': True,
-                'method': xai_method,
-                'explanation_url': f'/api/explanation-image?path={save_path.name}',
-                'num_features': len(scores)
-            })
+        elif xai_method == 'gradcam':
+            explainer = GradCAMExplainer()
+            if file_type == 'image':
+                explanation_img, scores, fig = explainer.explain(
+                    model,
+                    input_tensor,
+                    target_layer=None,
+                    save_path=save_path
+                )
+            else:
+                # Audio uses Keras model
+                import matplotlib
+                matplotlib.use('Agg')
+                import matplotlib.pyplot as plt
+                
+                heatmap = explainer.explain_audio(model, input_tensor, class_index=1)
+                # Create visualization for audio
+                fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+                if input_tensor.ndim == 4:
+                    spec_display = input_tensor[0, :, :, 0]
+                else:
+                    spec_display = input_tensor[:, :, 0] if input_tensor.ndim == 3 else input_tensor
+                axes[0].imshow(spec_display, cmap='viridis', aspect='auto')
+                axes[0].set_title('Original Spectrogram', fontweight='bold')
+                axes[0].axis('off')
+                axes[1].imshow(heatmap, cmap='jet', aspect='auto')
+                axes[1].set_title('Grad-CAM Heatmap', fontweight='bold')
+                axes[1].axis('off')
+                plt.suptitle('Grad-CAM Explanation (Audio)', fontsize=14, fontweight='bold')
+                plt.tight_layout()
+                save_path.parent.mkdir(parents=True, exist_ok=True)
+                fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
+                plt.close(fig)
+                explanation_img = heatmap
+                scores = {'max_activation': float(heatmap.max())}
+        elif xai_method == 'shap':
+            explanation_img, scores, fig = explain_with_shap(
+                model, input_tensor, input_type=file_type, save_path=save_path
+            )
         else:
-            return jsonify({'error': f'{xai_method.upper()} not yet implemented'}), 400
-            
+            return jsonify({'error': f'{xai_method.upper()} not implemented'}), 400
+
+        # Ensure scores are JSON serializable (convert numpy types to Python types)
+        if scores:
+            scores = {str(k): float(v) if isinstance(v, (int, float, np.integer, np.floating)) else v 
+                     for k, v in scores.items()}
+
+        return jsonify({
+            'success': True,
+            'method': xai_method,
+            'explanation_url': f'/api/explanation-image?path={save_path.name}' if fig else None,
+            'scores': scores if scores else {}
+        })
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -423,5 +466,6 @@ if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
         port=5000,
-        debug=True
+        debug=True,
+        use_reloader=False  # Disable auto-reload to prevent unwanted restarts
     )

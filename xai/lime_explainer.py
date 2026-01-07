@@ -15,6 +15,8 @@ Supports:
 
 import numpy as np
 import torch
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend for Flask
 import matplotlib.pyplot as plt
 from lime import lime_image
 from skimage.segmentation import mark_boundaries
@@ -122,18 +124,20 @@ class LIMEExplainer:
         # Create visualization
         explanation_image = mark_boundaries(temp, mask)
         
-        # Get importance scores
-        importance_scores = dict(explanation.local_exp[top_class])
+        # Get importance scores - convert numpy int64 keys to regular Python ints
+        importance_scores = {int(k): float(v) for k, v in explanation.local_exp[top_class]}
         
         print(f"   ✓ LIME explanation generated for spectrogram")
         print(f"   ✓ Explaining class: {class_names[top_class]}")
+        
+        return explanation_image, importance_scores
         
         return explanation_image, importance_scores
     
     
     def explain_image(self, model,
                      image_tensor: torch.Tensor,
-                     original_image: np.ndarray,
+                     original_image,
                      class_names: list) -> Tuple[np.ndarray, dict]:
         """
         Generate LIME explanation for an image
@@ -141,13 +145,20 @@ class LIMEExplainer:
         Args:
             model: The PyTorch classification model
             image_tensor: Preprocessed image tensor (1, 3, 224, 224)
-            original_image: Original image as numpy array (H, W, C) in [0, 255]
+            original_image: Original image (PIL Image or numpy array (H, W, C) in [0, 255])
             class_names: List of class names
         
         Returns:
             Tuple of (explanation_image, importance_scores)
         """
         print(f"\n🔍 Generating LIME explanation for image...")
+        
+        # Convert PIL Image to numpy array if needed
+        from PIL import Image
+        if isinstance(original_image, Image.Image):
+            # Resize to match model input size and convert to numpy
+            original_image = original_image.resize((224, 224))
+            original_image = np.array(original_image)
         
         # Prepare prediction function for LIME
         def predict_fn(images):
@@ -215,8 +226,8 @@ class LIMEExplainer:
         # Create visualization with boundaries
         explanation_image = mark_boundaries(temp, mask)
         
-        # Get feature importance scores
-        importance_scores = dict(explanation.local_exp[top_class])
+        # Get feature importance scores - convert numpy int64 keys to regular Python ints
+        importance_scores = {int(k): float(v) for k, v in explanation.local_exp[top_class]}
         
         print(f"   ✓ LIME explanation generated for image")
         print(f"   ✓ Explaining class: {class_names[top_class]}")
@@ -294,7 +305,9 @@ class LIMEExplainer:
         plt.tight_layout()
         
         if save_path:
-            fig.savefig(save_path, dpi=150, bbox_inches='tight')
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor='white')
+            plt.close(fig)  # Close figure to free memory and flush file
             print(f"   ✓ Saved visualization to {save_path}")
         
         return fig
@@ -314,7 +327,7 @@ def explain_with_lime(model, input_tensor, original_data,
     Args:
         model: Classification model (Keras for audio, PyTorch for image)
         input_tensor: Preprocessed input tensor
-        original_data: Original data (numpy array)
+        original_data: Original data (numpy array or PIL Image)
         input_type: 'audio' or 'image'
         class_names: List of class names
         prediction_result: Prediction results
@@ -324,6 +337,12 @@ def explain_with_lime(model, input_tensor, original_data,
         Tuple of (explanation_image, importance_scores, figure)
     """
     explainer = LIMEExplainer()
+    
+    # Convert PIL Image to numpy for visualization
+    from PIL import Image
+    original_for_viz = original_data
+    if isinstance(original_data, Image.Image):
+        original_for_viz = np.array(original_data.resize((224, 224)))
     
     if input_type == "audio":
         explanation_img, scores = explainer.explain_audio_spectrogram(
@@ -338,7 +357,7 @@ def explain_with_lime(model, input_tensor, original_data,
     
     # Create visualization
     fig = explainer.visualize_explanation(
-        original_data, explanation_img, scores, 
+        original_for_viz, explanation_img, scores, 
         prediction_result, input_type=input_type, save_path=save_path
     )
     

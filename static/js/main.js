@@ -228,9 +228,19 @@ function displayPrediction(data) {
 // Generate explanation
 async function generateExplanation(method) {
     const loadingDiv = document.getElementById('explanation-loading');
+    const loadingText = document.getElementById('loading-text');
+    
+    // Update loading text based on method
+    const methodNames = {
+        'lime': 'LIME',
+        'gradcam': 'Grad-CAM',
+        'shap': 'SHAP'
+    };
+    const methodName = methodNames[method] || method.toUpperCase();
+    loadingText.textContent = `Generating ${methodName} explanation... This may take 30-60 seconds.`;
     loadingDiv.style.display = 'block';
     
-    showToast('Generating explanation... Please wait 30-60 seconds', 'info');
+    showToast(`Generating ${methodName} explanation... Please wait 30-60 seconds`, 'info');
     
     try {
         const response = await fetch('/api/explain', {
@@ -262,12 +272,21 @@ async function generateExplanation(method) {
 function displayExplanation(data) {
     const section = document.getElementById('explanation-section');
     const content = document.getElementById('explanation-content');
+    const title = document.getElementById('explanation-title');
+    
+    // Set correct title based on method
+    const methodNames = {
+        'lime': 'LIME',
+        'gradcam': 'Grad-CAM',
+        'shap': 'SHAP'
+    };
+    const methodName = methodNames[data.method] || data.method.toUpperCase();
+    title.textContent = `✨ ${methodName} Explanation`;
     
     let html = `
-        <p><strong>Method:</strong> ${data.method.toUpperCase()}</p>
-        <p><strong>Features Analyzed:</strong> ${data.num_features}</p>
+        <p><strong>Method:</strong> ${methodName}</p>
         <p style="margin-top: 16px;">The visualization below shows which regions of your input were most important for the prediction.</p>
-        <img src="${data.explanation_url}?${new Date().getTime()}" class="explanation-image" alt="LIME Explanation">
+        <img src="${data.explanation_url}&t=${new Date().getTime()}" class="explanation-image" alt="${methodName} Explanation">
     `;
     
     content.innerHTML = html;
