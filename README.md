@@ -31,19 +31,19 @@ This project implements a unified interface for two distinct classification task
 
 1. **Audio Classification**: Deepfake detection (Real vs Fake speech)
 
-- **Models:** VGG16, MobileNet, ResNet, Custom CNN
+- **Models:** VGG16, MobileNet, ResNet
 - **Dataset:** Fake-or-Real (FoR) Dataset
 - **Input:** `.wav` audio files
 - **XAI Methods:** LIME, SHAP
 
 2. **Image Classification**: Chest X-ray analysis (Normal vs Malignant)
 
-- **Models:** AlexNet, DenseNet
+- **Models:** ConveNext, DenseNet
 - **Dataset:** CheXpert chest X-rays
 - **Input:** `.png`, `.jpg` image files
 - **XAI Methods:** Grad-CAM, LIME, SHAP
 
-Both models are enhanced with **LIME** (Local Interpretable Model-agnostic Explanations) to provide visual explanations of predictions, making the AI decision-making process transparent and interpretable.
+Both models are enhanced with **LIME** (Local Interpretable Model-agnostic Explanations), Grad-CAM and SHAP to provide visual explanations of predictions, making the AI decision-making process transparent and interpretable.
 
 ### Key Objectives
 
@@ -71,7 +71,7 @@ Both models are enhanced with **LIME** (Local Interpretable Model-agnostic Expla
 - **CPU Support** - No GPU required (Colab optional)
 
 ### 🔍 Explainable AI
-- **LIME Integration** - Visual feature importance
+- **LIME, SHAP, Grad-CAM Integration** - Visual feature importance
 - **Automatic Filtering** - XAI method compatibility checking
 - **Clear Visualizations** - Heatmaps and overlays
 - **Interpretable Results** - Understand model decisions
@@ -172,32 +172,24 @@ The application will start on **http://localhost:5000**
 5. **Reset** (Optional)
    - Click reset button to start over
 
-### Alternative: Chainlit Interface
 
-A chat-based interface is also available:
-
-```bash
-chainlit run app.py -w --port 8080
-```
-
-Access at **http://localhost:8080**
-
----
 
 ## 📁 Project Structure
 
 ```
 XAI_Final_Project/
 ├── app_flask.py              # Flask web application (MAIN)
-├── app.py                    # Chainlit interface (alternative)
 ├── config.py                 # Configuration settings
 ├── requirements.txt          # Python dependencies
 │
 ├── models/                   # Neural network models
 │   ├── audio/
-│   │   └── custom_cnn_audio.py
+│   │   ├── mobilenet.ipynb
+│   │   ├── resnet50.ipynb
+│   │   └── vgg16.ipynb
 │   ├── image/
-│   │   └── alexnet_image.py
+│   │   ├── convnext.json
+│   │   └── densenet.json
 │   └── model_loader.py
 │
 ├── preprocessing/            # Data preprocessing
@@ -205,7 +197,9 @@ XAI_Final_Project/
 │   └── image_processor.py
 │
 ├── xai/                      # Explainable AI
-│   └── lime_explainer.py
+│   ├── lime_explainer.py
+│   ├── gradcam_explainer.py
+│   └── shap_explainer.py
 │
 ├── utils/                    # Utility functions
 │   ├── file_handler.py
@@ -236,49 +230,96 @@ XAI_Final_Project/
 
 ## 🧠 Models & XAI
 
-### Audio Model: CustomCNN
+## Models & XAI
 
-**Architecture:**
-- 3 Convolutional blocks (Conv2D → BatchNorm → ReLU → MaxPool)
-- Global Average Pooling
-- 2 Fully Connected layers
-- Dropout regularization
+### Audio Models
 
-**Input:** Mel-spectrogram (3, 128, 128)  
+#### MobileNet
+- Depthwise separable convolutions
+- Inverted residual blocks
+- Transfer learning from ImageNet
+- Modified final layer for binary classification (Real/Fake)
+
+**Input:** Mel-spectrogram (3, 224, 224)  
 **Output:** Binary classification (Real/Fake)  
-**Parameters:** ~200K
+**Parameters:** ~4.2M
 
-### Image Model: AlexNet
+#### ResNet-50
+- 50 layers with residual connections
+- Bottleneck blocks (1×1 → 3×3 → 1×1 convolutions)
+- Transfer learning from ImageNet
+- Modified final layer for binary classification
 
-**Architecture:**
-- 5 Convolutional layers
-- 3 Fully Connected layers
+**Input:** Mel-spectrogram (3, 224, 224)  
+**Output:** Binary classification (Real/Fake)  
+**Parameters:** ~25M
+
+#### VGG-16
+- 16 layers (13 convolutional + 3 fully connected)
+- Small 3×3 filters with deep architecture
+- Transfer learning from ImageNet
+- Modified final layer for binary classification
+
+**Input:** Mel-spectrogram (3, 224, 224)  
+**Output:** Binary classification (Real/Fake)  
+**Parameters:** ~138M
+
+---
+
+### Image Models
+
+#### ConvNeXt
+- Modernized CNN with transformer-inspired design
+- Larger 7×7 kernels and inverted bottlenecks
+- Layer normalization and GELU activations
+- Transfer learning from ImageNet
+- Modified final layer for binary classification (Normal/Malignant)
+
+**Input:** RGB image (3, 224, 224)  
+**Output:** Binary classification (Normal/Malignant)  
+**Parameters:** ~28M (Tiny variant)
+
+#### DenseNet
+- Dense connectivity pattern (each layer connects to all previous layers)
+- Feature concatenation for efficient reuse
+- Compact growth rate (k=32)
 - Transfer learning from ImageNet
 - Modified final layer for binary classification
 
 **Input:** RGB image (3, 224, 224)  
 **Output:** Binary classification (Normal/Malignant)  
-**Parameters:** ~60M
-
-### XAI Method: LIME
-
-**Local Interpretable Model-agnostic Explanations**
-
-- Generates 1000 perturbed samples
-- Fits local linear model
-- Identifies important features
-- Creates visual heatmaps
-- Works for both audio and images
+**Parameters:** ~8M (DenseNet-121)
 
 ---
+
+### XAI Methods
+
+#### LIME (Local Interpretable Model-agnostic Explanations)
+- Generates 1,000 perturbed samples
+- Fits local linear model around prediction
+- Identifies important features through perturbation
+- Creates visual heatmaps with feature importance
+- Works for both audio spectrograms and images
+
+#### Grad-CAM (Gradient-weighted Class Activation Mapping)
+- Uses gradients flowing into final convolutional layer
+- Generates class-discriminative localization maps
+- Highlights regions important for prediction
+- Fast computation (<5 seconds)
+- Works only for images (all image models)
+
+#### SHAP (SHapley Additive exPlanations)
+- Game theory-based feature attribution
+- Computes Shapley values for fair contribution
+- Uses DeepExplainer for neural networks
+- Shows positive/negative feature contributions
+- Works for both audio and images (all models)
 
 ## 📚 Documentation
 
 Comprehensive documentation is available in the `docs/` folder:
 
-- **[TECHNICAL_REPORT.md](docs/TECHNICAL_REPORT.md)** - Detailed technical documentation
 - **[GENERATIVE_AI_USAGE.md](docs/GENERATIVE_AI_USAGE.md)** - AI tools disclosure
-- **[DEMO_GUIDE.md](docs/DEMO_GUIDE.md)** - Presentation guide
 
 ---
 
