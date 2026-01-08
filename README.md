@@ -2,10 +2,11 @@
 
 **Multi-Modal Classification with Explainable AI**
 
-A comprehensive web application integrating deepfake audio detection and lung cancer detection with explainable AI techniques (LIME). Built with Flask, PyTorch, and modern web technologies.
+A comprehensive web application integrating deepfake audio detection and lung cancer detection with explainable AI techniques (LIME, Grad-CAM, and SHAP). Built with Flask, PyTorch, TensorFlow and modern web technologies.
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-red.svg)
+![TensorFlow](https://img.shields.io/badge/TensorFlow-2.0+-orange.svg)
 ![Flask](https://img.shields.io/badge/Flask-3.0+-green.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
@@ -13,15 +14,15 @@ A comprehensive web application integrating deepfake audio detection and lung ca
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Models & XAI](#models--xai)
-- [Documentation](#documentation)
-- [Team](#team)
-- [License](#license)
+- [Overview](#-overview)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Project Structure](#-project-structure)
+- [Documentation](#-documentation)
+- [Team](#-team)
+- [Technologies Used](#-technologies-used)
+- [Configuration](#-configuration)
 
 ---
 
@@ -33,25 +34,15 @@ This project implements a unified interface for two distinct classification task
 
 - **Models:** VGG16, MobileNet, ResNet
 - **Dataset:** Fake-or-Real (FoR) Dataset
-- **Input:** `.wav` audio files
-- **XAI Methods:** LIME, SHAP
+- **Input:** `.wav`, `.mp3` audio files
 
 2. **Image Classification**: Chest X-ray analysis (Normal vs Malignant)
 
-- **Models:** ConveNext, DenseNet
+- **Models:** ConvNeXt, DenseNet
 - **Dataset:** CheXpert chest X-rays
 - **Input:** `.png`, `.jpg` image files
-- **XAI Methods:** Grad-CAM, LIME, SHAP
 
-Both models are enhanced with **LIME** (Local Interpretable Model-agnostic Explanations), Grad-CAM and SHAP to provide visual explanations of predictions, making the AI decision-making process transparent and interpretable.
-
-### Key Objectives
-
-- ✅ Unified interface for multi-modal inputs
-- ✅ Explainable AI integration
-- ✅ Automatic compatibility filtering
-- ✅ Professional web interface
-- ✅ Modular, extensible architecture
+Both models are enhanced with  XAI techniques (**LIME**, **Grad-CAM** and **SHAP**) to provide interpretable insights into their predictions.
 
 ---
 
@@ -64,24 +55,25 @@ Both models are enhanced with **LIME** (Local Interpretable Model-agnostic Expla
 - **Responsive Design** - Works on all devices
 - **Toast Notifications** - Clear user feedback
 
-### 🧠 Machine Learning
-- **CustomCNN** - Lightweight audio classification model
-- **AlexNet** - Transfer learning for medical imaging
-- **Dual Modality** - Handles both audio and images
-- **CPU Support** - No GPU required (Colab optional)
+### 🧠 AI Predictions
+- **Model Selection** - Easy switching between models:
+
+   - **Audio Classification**:
+      - **VGG16** - Classic CNN architecture
+      - **MobileNet** - Lightweight, fast model
+      - **ResNet** - Deep residual learning, strong feature extractor
+
+   - **Image Classification**:
+      - **ConvNeXt** - Modernized CNN
+      - **DenseNet** - Dense connectivity, efficient feature reuse
+
+- **Confidence Scores** - Probability distribution visualization
 
 ### 🔍 Explainable AI
-- **LIME, SHAP, Grad-CAM Integration** - Visual feature importance
+- **LIME, Grad-CAM and SHAP Integration** - Visual feature importance
 - **Automatic Filtering** - XAI method compatibility checking
 - **Clear Visualizations** - Heatmaps and overlays
 - **Interpretable Results** - Understand model decisions
-
-### 📊 Additional Features
-- Session management
-- File validation
-- Automatic preprocessing
-- Confidence scores
-- Probability visualization
 
 ---
 
@@ -118,22 +110,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 4: Add Sample Data
+### Step 4: Download Pre-trained Models
 
-Download the sample data and place files in:
-```
-data/
-├── sample_audio/
-│   ├── real_speech_1.wav
-│   ├── real_speech_2.wav
-│   ├── fake_speech_1.wav
-│   └── fake_speech_2.wav
-└── sample_images/
-    ├── normal_xray_1.png
-    ├── normal_xray_2.png
-    ├── malignant_xray_1.png
-    └── malignant_xray_2.png
-```
+Download the pre-trained models [here](https://drive.google.com/file/d/15iRpPcClbGSxuxQ9ZDssZvuxWUFpniQ1/view?usp=sharing).
+Unzip the `models.zip` archive and place the `models/` folder in the project root directory, replacing the existing one.
 
 ---
 
@@ -156,8 +136,8 @@ The application will start on **http://localhost:5000**
 
 2. **Select Model**
    - Click on the appropriate model button
-   - CustomCNN for audio
-   - AlexNet for images
+   - MobileNet, Resnet50 or VGG16 for audio
+   - ConvNeXt or DenseNet for images
 
 3. **View Prediction**
    - See classification result
@@ -165,14 +145,14 @@ The application will start on **http://localhost:5000**
    - Examine probability distribution
 
 4. **Generate Explanation**
-   - Click "Explain with LIME"
+   - Click "Explain with LIME/Grad-CAM/SHAP"
    - Wait 30-60 seconds for processing
    - View visual explanation
 
 5. **Reset** (Optional)
    - Click reset button to start over
 
-
+---
 
 ## 📁 Project Structure
 
@@ -184,12 +164,17 @@ XAI_Final_Project/
 │
 ├── models/                   # Neural network models
 │   ├── audio/
+│   │   ├── mobilenet.h5
 │   │   ├── mobilenet.ipynb
+│   │   ├── resnet50.h5
 │   │   ├── resnet50.ipynb
+│   │   ├── vgg16.h5
 │   │   └── vgg16.ipynb
 │   ├── image/
 │   │   ├── convnext.json
-│   │   └── densenet.json
+│   │   ├── convnext.safetensors
+│   │   ├── densenet.json
+│   │   └── densenet.safetensors
 │   └── model_loader.py
 │
 ├── preprocessing/            # Data preprocessing
@@ -197,8 +182,8 @@ XAI_Final_Project/
 │   └── image_processor.py
 │
 ├── xai/                      # Explainable AI
-│   ├── lime_explainer.py
 │   ├── gradcam_explainer.py
+│   ├── lime_explainer.py
 │   └── shap_explainer.py
 │
 ├── utils/                    # Utility functions
@@ -214,12 +199,7 @@ XAI_Final_Project/
 │   └── js/
 │       └── main.js
 │
-├── data/                     # Sample data (not in git)
-│   ├── sample_audio/
-│   └── sample_images/
-│
 ├── docs/                     # Documentation
-│   ├── TECHNICAL_REPORT.md
 │   └── GENERATIVE_AI_USAGE.md
 │
 └── outputs/                  # Generated visualizations
@@ -227,93 +207,6 @@ XAI_Final_Project/
 ```
 
 ---
-
-## 🧠 Models & XAI
-
-## Models & XAI
-
-### Audio Models
-
-#### MobileNet
-- Depthwise separable convolutions
-- Inverted residual blocks
-- Transfer learning from ImageNet
-- Modified final layer for binary classification (Real/Fake)
-
-**Input:** Mel-spectrogram (3, 224, 224)  
-**Output:** Binary classification (Real/Fake)  
-**Parameters:** ~4.2M
-
-#### ResNet-50
-- 50 layers with residual connections
-- Bottleneck blocks (1×1 → 3×3 → 1×1 convolutions)
-- Transfer learning from ImageNet
-- Modified final layer for binary classification
-
-**Input:** Mel-spectrogram (3, 224, 224)  
-**Output:** Binary classification (Real/Fake)  
-**Parameters:** ~25M
-
-#### VGG-16
-- 16 layers (13 convolutional + 3 fully connected)
-- Small 3×3 filters with deep architecture
-- Transfer learning from ImageNet
-- Modified final layer for binary classification
-
-**Input:** Mel-spectrogram (3, 224, 224)  
-**Output:** Binary classification (Real/Fake)  
-**Parameters:** ~138M
-
----
-
-### Image Models
-
-#### ConvNeXt
-- Modernized CNN with transformer-inspired design
-- Larger 7×7 kernels and inverted bottlenecks
-- Layer normalization and GELU activations
-- Transfer learning from ImageNet
-- Modified final layer for binary classification (Normal/Malignant)
-
-**Input:** RGB image (3, 224, 224)  
-**Output:** Binary classification (Normal/Malignant)  
-**Parameters:** ~28M (Tiny variant)
-
-#### DenseNet
-- Dense connectivity pattern (each layer connects to all previous layers)
-- Feature concatenation for efficient reuse
-- Compact growth rate (k=32)
-- Transfer learning from ImageNet
-- Modified final layer for binary classification
-
-**Input:** RGB image (3, 224, 224)  
-**Output:** Binary classification (Normal/Malignant)  
-**Parameters:** ~8M (DenseNet-121)
-
----
-
-### XAI Methods
-
-#### LIME (Local Interpretable Model-agnostic Explanations)
-- Generates 1,000 perturbed samples
-- Fits local linear model around prediction
-- Identifies important features through perturbation
-- Creates visual heatmaps with feature importance
-- Works for both audio spectrograms and images
-
-#### Grad-CAM (Gradient-weighted Class Activation Mapping)
-- Uses gradients flowing into final convolutional layer
-- Generates class-discriminative localization maps
-- Highlights regions important for prediction
-- Fast computation (<5 seconds)
-- Works only for images (all image models)
-
-#### SHAP (SHapley Additive exPlanations)
-- Game theory-based feature attribution
-- Computes Shapley values for fair contribution
-- Uses DeepExplainer for neural networks
-- Shows positive/negative feature contributions
-- Works for both audio and images (all models)
 
 ## 📚 Documentation
 
@@ -340,8 +233,11 @@ Comprehensive documentation is available in the `docs/` folder:
 ### Backend
 - **Python 3.8+** - Programming language
 - **PyTorch 2.0+** - Deep learning framework
+- **TensorFlow/Keras** - Model building
 - **Flask 3.0+** - Web framework
 - **LIME** - Explainable AI library
+- **Grad-CAM** - Visual explanations
+- **SHAP** - Model interpretability
 
 ### Audio Processing
 - **librosa** - Audio analysis
@@ -349,7 +245,7 @@ Comprehensive documentation is available in the `docs/` folder:
 - **scipy** - Signal processing
 
 ### Image Processing
-- **torchvision** - Image preprocessing
+- **keras-preprocessing** - Image preprocessing
 - **PIL** - Image handling
 - **scikit-image** - Image segmentation
 
@@ -375,64 +271,3 @@ Edit `app_flask.py`:
 ```python
 app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB
 ```
-
-### Modify LIME Parameters
-
-Edit `xai/lime_explainer.py`:
-```python
-self.num_samples = 1000  # Number of samples
-self.num_features = 10   # Top features to show
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Port Already in Use
-```bash
-# Use different port
-# Edit app_flask.py or:
-python app_flask.py  # Then change port in file
-```
-
-### Module Not Found
-```bash
-pip install -r requirements.txt
-```
-
-### LIME Takes Too Long
-Reduce samples in `xai/lime_explainer.py`:
-```python
-self.num_samples = 500  # Faster but less accurate
-```
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- **Anthropic** - Claude AI and Gemini for development assistance
-- **PyTorch Team** - Deep learning framework
-- **LIME Authors** - Explainable AI methodology
-- **Flask Community** - Web framework
-- **Course Instructors** - Project guidance
-
----
-
-
-## 🎯 Project Status
-
-- ✅ Phase 1: Project Foundation
-- ✅ Phase 2: Model Implementation
-- ✅ Phase 3: XAI Integration
-- ✅ Phase 4: Web Interface (Flask)
-- ✅ Phase 5: Documentation & Testing
-
-
----
-
